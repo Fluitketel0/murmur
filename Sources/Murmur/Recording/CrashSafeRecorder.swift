@@ -1,4 +1,6 @@
 @preconcurrency import AVFoundation
+import AudioToolbox
+import CoreAudio
 
 /// Records the microphone to disk **continuously**, so a crash or force-quit loses
 /// at most the last buffer instead of the whole recording.
@@ -19,7 +21,10 @@ final class CrashSafeRecorder {
 
     enum RecorderError: Error { case engineFailed(String) }
 
-    private let engine = AVAudioEngine()
+    /// Recreated on each `start()` so the input node always binds to the *current*
+    /// default input device (a long-lived engine keeps using whatever was default when
+    /// it was created, which goes silent if the user later switches mics).
+    private var engine = AVAudioEngine()
     private let lock = NSLock()
     private var outputFile: AVAudioFile?
     private var converter: AVAudioConverter?
@@ -40,6 +45,8 @@ final class CrashSafeRecorder {
         defer { lock.unlock() }
         guard !isRecording else { return }
 
+        // Fresh engine so the input node binds to whatever the default input is *now*.
+        engine = AVAudioEngine()
         let input = engine.inputNode
         // Must be set before querying the input format / starting the engine.
         // Best-effort: if the system refuses it we still record, just without AEC.
@@ -47,10 +54,15 @@ final class CrashSafeRecorder {
             do { try input.setVoiceProcessingEnabled(true) }
             catch { Log.error("Voice processing unavailable: \(error.localizedDescription)") }
         }
+        // Pin the input node to the current default input device explicitly, so we
+        // record the mic the user is actually using (not a stale one).
+        Self.bindDefaultInputDevice(input)
         let inputFormat = input.outputFormat(forBus: 0)
         guard inputFormat.sampleRate > 0 else {
             throw RecorderError.engineFailed("No microphone input available")
         }
+        Log.info("Recording input: \(Self.defaultInputDeviceName() ?? "default"), "
+                 + "\(Int(inputFormat.sampleRate)) Hz \(inputFormat.channelCount) ch")
 
         let target = Self.transcriptionFormat
         guard let converter = AVAudioConverter(from: inputFormat, to: target) else {
@@ -92,6 +104,47 @@ final class CrashSafeRecorder {
         converter = nil
         isRecording = false
         Log.info("Recording stopped")
+    }
+
+    // MARK: Input device selection
+
+    /// Point the engine's input node at the current default input device, so we always
+    /// capture from the mic the user is actually using. Best-effort: on failure we fall
+    /// back to whatever the node defaulted to.
+    private static func bindDefaultInputDevice(_ node: AVAudioInputNode) {
+        guard var deviceID = defaultInputDevice, let unit = node.audioUnit else { return }
+        let status = AudioUnitSetProperty(unit,
+                                          kAudioOutputUnitProperty_CurrentDevice,
+                                          kAudioUnitScope_Global, 0,
+                                          &deviceID, UInt32(MemoryLayout<AudioDeviceID>.size))
+        if status != noErr { Log.error("Could not set input device (status \(status))") }
+    }
+
+    private static var defaultInputDevice: AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var device = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                                &address, 0, nil, &size, &device)
+        return status == noErr && device != 0 ? device : nil
+    }
+
+    /// The default input device's human-readable name (for diagnostics).
+    private static func defaultInputDeviceName() -> String? {
+        guard let device = defaultInputDevice else { return nil }
+        var address = AudioObjectPropertyAddress(mSelector: kAudioObjectPropertyName,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var name: CFString = "" as CFString
+        var size = UInt32(MemoryLayout<CFString>.size)
+        let status = withUnsafeMutablePointer(to: &name) {
+            AudioObjectGetPropertyData(device, &address, 0, nil, &size, $0)
+        }
+        guard status == noErr else { return nil }
+        let value = name as String
+        return value.isEmpty ? nil : value
     }
 
     // MARK: Audio thread
