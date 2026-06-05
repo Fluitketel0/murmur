@@ -16,6 +16,13 @@ actor ParakeetEngine: TranscriptionEngine {
     private var asr: AsrManager?
     private var vad: VadManager?
 
+    /// Speech-segmentation tuning. We raise the silence gap that ends a chunk from the
+    /// 0.75s default to 1.5s, so a normal thinking pause doesn't split the utterance.
+    /// Each split tends to pick up a sentence-final period from the model, so fewer
+    /// splits means fewer stray periods on pauses. The 14s max-chunk cap is unchanged,
+    /// so memory stays bounded regardless of how long you talk.
+    private static let segmentation = VadSegmentationConfig(minSilenceDuration: 1.5)
+
     enum EngineError: Error { case notPrepared }
 
     /// Download (first run only) and load the ASR + VAD Core ML models. Idempotent.
@@ -54,7 +61,7 @@ actor ParakeetEngine: TranscriptionEngine {
         let (samples, _, _) = try AudioSamples.read(url)
         guard !samples.isEmpty else { return Transcript(text: "", segments: []) }
 
-        let segments = try await vad.segmentSpeech(samples)
+        let segments = try await vad.segmentSpeech(samples, config: Self.segmentation)
         if segments.isEmpty {
             return Transcript(text: "", segments: [])
         }
