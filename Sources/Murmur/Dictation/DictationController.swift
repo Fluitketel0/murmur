@@ -80,6 +80,15 @@ final class DictationController {
     private func wireHotkey() {
         hotkey.onPress = { [weak self] in self?.keyPressed() }
         hotkey.onRelease = { [weak self] in self?.keyReleased() }
+        hotkey.onComboKey = { [weak self] in self?.comboKeyPressed() }
+    }
+
+    /// A key was pressed while the (bare-modifier) trigger is held, so it's being used
+    /// as a modifier, e.g. Fn+Delete, not a push-to-talk hold. Cancel the dictation we
+    /// just started and discard it, without transcribing or injecting anything.
+    private func comboKeyPressed() {
+        guard phase == .holding else { return }
+        abortCapture()
     }
 
     // MARK: Return / Enter to end a dictation
@@ -200,11 +209,19 @@ final class DictationController {
             break   // toggled on press; releases are ignored
         case .hybrid:
             let held = pressedAt.map { Date().timeIntervalSince($0) } ?? 0
-            if held < tapThreshold { phase = .handsFree; onStateChange?() } else { finishCapture() }
+            if held < tapThreshold { enterHandsFree() } else { finishCapture() }
         case .holdWithLatch:
             cancelLatch()
-            if latched { phase = .handsFree; onStateChange?() } else { finishCapture() }
+            if latched { enterHandsFree() } else { finishCapture() }
         }
+    }
+
+    /// Switch an in-progress hold over to hands-free: the key is released, so the combo
+    /// cancel no longer applies and Return/Enter become the way to stop.
+    private func enterHandsFree() {
+        phase = .handsFree
+        armStopKeys()
+        onStateChange?()
     }
 
     private func scheduleLatch() {
@@ -239,12 +256,33 @@ final class DictationController {
             phase = newPhase
             ducker.duckIfPlaying()
             Sounds.recordingStarted()
-            armStopKeys()
+            // Return/Enter end a hands-free dictation. During a pure hold we don't arm
+            // them: you stop by releasing the key, and any key press cancels (see
+            // comboKeyPressed), so arming them here would fight that.
+            if newPhase == .handsFree { armStopKeys() }
             onStateChange?()
         } catch {
             Log.error("Dictation capture failed: \(error.localizedDescription)")
             tempURL = nil
         }
+    }
+
+    /// Stop and discard an in-progress dictation: no transcription, no injection. Used
+    /// when the hold trigger turns out to be part of a key combo (e.g. Fn+Delete).
+    private func abortCapture() {
+        cancelLatch()
+        disarmStopKeys()
+        guard phase != .idle, let url = tempURL else { phase = .idle; return }
+        recorder.stop()
+        ducker.restore()
+        try? FileManager.default.removeItem(at: url)
+        phase = .idle
+        tempURL = nil
+        beganAt = nil
+        pressedAt = nil
+        latched = false
+        onStateChange?()
+        Log.info("Dictation cancelled (trigger used as a modifier)")
     }
 
     private func finishCapture() {

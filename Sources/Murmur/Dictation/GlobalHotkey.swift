@@ -18,6 +18,10 @@ final class GlobalHotkey {
 
     var onPress: (@MainActor () -> Void)?
     var onRelease: (@MainActor () -> Void)?
+    /// Bare-modifier triggers only: fired when another key is pressed while the modifier
+    /// is held, i.e. the modifier is being used in a key combo (e.g. Fn+Delete) rather
+    /// than as a push-to-talk hold. The key is never consumed, so the combo still works.
+    var onComboKey: (@MainActor () -> Void)?
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -33,7 +37,9 @@ final class GlobalHotkey {
 
         let mask: CGEventMask = isChord
             ? (CGEventMask(1 << CGEventType.keyDown.rawValue) | CGEventMask(1 << CGEventType.keyUp.rawValue))
-            : CGEventMask(1 << CGEventType.flagsChanged.rawValue)
+            // Bare modifier: watch flagsChanged for the hold, and keyDown so we can tell
+            // when the modifier is being used in a combo (e.g. Fn+Delete) and cancel.
+            : (CGEventMask(1 << CGEventType.flagsChanged.rawValue) | CGEventMask(1 << CGEventType.keyDown.rawValue))
         let options: CGEventTapOptions = isChord ? .defaultTap : .listenOnly
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
@@ -114,6 +120,13 @@ final class GlobalHotkey {
                 return false
             }
         } else {
+            if type == .keyDown {
+                // A key pressed while the bare modifier is held: it's being used as a
+                // modifier (e.g. Fn+Delete), not a push-to-talk hold. Don't consume it
+                // (the combo must still work); just notify so dictation can cancel.
+                MainActor.assumeIsolated { if isDown { onComboKey?() } }
+                return false
+            }
             guard type == .flagsChanged else { return false }
             let down = bareModifierHeld(event.flags)
             MainActor.assumeIsolated {
