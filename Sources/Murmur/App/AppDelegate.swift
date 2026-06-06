@@ -8,7 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var windowController = MainWindowController(model: model)
     private var statusItem: NSStatusItem!
     private let hud = RecordingHUD()
-    private var hudActive = false
+    private enum HUDState { case hidden, recording, processing }
+    private var hudState: HUDState = .hidden
     /// Whether the status menu is currently open; we only rebuild its recording rows
     /// while it's visible (state changes fire often during transcription).
     private var menuIsOpen = false
@@ -111,10 +112,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Show the meter HUD while recording or dictating; hide it otherwise. Only acts
     /// on transitions so the elapsed timer isn't reset by unrelated UI refreshes.
     private func updateHUD() {
-        let active = coordinator.isDictating || coordinator.isMeetingRecording
-        guard active != hudActive else { return }
-        hudActive = active
-        if active { hud.show() } else { hud.hide() }
+        let recording = coordinator.isDictating || coordinator.isMeetingRecording
+        // After a dictation, keep the HUD up while the transcript is being produced.
+        let processing = coordinator.isFinishingDictation && !recording
+        let desired: HUDState = recording ? .recording : (processing ? .processing : .hidden)
+        guard desired != hudState else { return }
+        hudState = desired
+        switch desired {
+        case .recording:  hud.show()
+        case .processing: hud.showProcessing(coordinator.engineReady ? "Transcribing" : "Loading model")
+        case .hidden:     hud.hide()
+        }
     }
 
     private func setupMenuBar() {

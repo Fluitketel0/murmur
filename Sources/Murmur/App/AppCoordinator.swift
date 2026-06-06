@@ -59,7 +59,13 @@ final class AppCoordinator {
 
     var dictationEnabled: Bool { dictation.isEnabled }
     var isDictating: Bool { dictation.isDictating }
+    /// A dictation has been captured and is being transcribed (the HUD stays up).
+    var isFinishingDictation: Bool { dictation.isFinishing }
     var dictationTrigger: String { dictation.triggerDescription }
+
+    /// Whether the speech model has finished loading. Drives the HUD's "Loading model"
+    /// vs "Transcribing" message while a dictation is finishing.
+    private(set) var engineReady = false
 
     func toggleDictation() {
         dictation.toggle()
@@ -76,7 +82,12 @@ final class AppCoordinator {
     /// stuck on a slow cold load (worst right after a reboot or macOS update, when CoreML
     /// recompiles for the Neural Engine). Idempotent and cheap to call repeatedly.
     func prewarmEngine() {
-        Task { await engine.prewarm() }
+        guard !engineReady else { return }
+        Task {
+            await engine.prewarm()
+            engineReady = true
+            onStateChange?()
+        }
     }
 
     var dictationMode: DictationMode { Settings.dictationMode }

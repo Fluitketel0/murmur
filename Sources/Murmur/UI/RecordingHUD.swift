@@ -14,11 +14,16 @@ final class RecordingHUD {
     private let panel: NSPanel
     private let meter = LevelMeterView()
     private let timeLabel = NSTextField(labelWithString: "0:00")
+    private let statusLabel = NSTextField(labelWithString: "")
     private var startDate: Date?
     private var lastShownSecond = -1
     private var latestLevel: CGFloat = 0
     private var timer: Timer?
     private var activity: NSObjectProtocol?
+    /// Non-nil while showing the post-recording "finishing" state; the base message the
+    /// timer animates a trailing ellipsis onto.
+    private var processingMessage: String?
+    private var animFrame = 0
 
     init() {
         let size = NSSize(width: 168, height: 44)
@@ -47,8 +52,16 @@ final class RecordingHUD {
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
         meter.translatesAutoresizingMaskIntoConstraints = false
 
+        // Shown instead of the meter+timer while a dictation is being transcribed.
+        statusLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        statusLabel.textColor = .white
+        statusLabel.alignment = .center
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.isHidden = true
+
         background.addSubview(meter)
         background.addSubview(timeLabel)
+        background.addSubview(statusLabel)
         NSLayoutConstraint.activate([
             meter.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 12),
             meter.centerYAnchor.constraint(equalTo: background.centerYAnchor),
@@ -57,42 +70,70 @@ final class RecordingHUD {
             timeLabel.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -12),
             timeLabel.centerYAnchor.constraint(equalTo: background.centerYAnchor),
             timeLabel.widthAnchor.constraint(equalToConstant: 40),
+            statusLabel.centerXAnchor.constraint(equalTo: background.centerXAnchor),
+            statusLabel.centerYAnchor.constraint(equalTo: background.centerYAnchor),
+            statusLabel.leadingAnchor.constraint(greaterThanOrEqualTo: background.leadingAnchor, constant: 10),
         ])
         panel.contentView = background
     }
 
+    /// Recording mode: live level meter + elapsed timer.
     func show() {
+        processingMessage = nil
+        meter.isHidden = false
+        timeLabel.isHidden = false
+        statusLabel.isHidden = true
         meter.reset()
         latestLevel = 0
         timeLabel.stringValue = "0:00"
         lastShownSecond = 0
         startDate = Date()
-        positionBottomCenter()
-        panel.orderFrontRegardless()   // show without taking focus
+        ensureVisible()
+    }
 
-        // Keep the app lively so the meter keeps animating in the background.
-        activity = ProcessInfo.processInfo.beginActivity(
-            options: [.userInitiated, .idleSystemSleepDisabled],
-            reason: "Recording meter")
-
-        timer?.invalidate()
-        // ~15 fps: the bars scroll gently rather than racing across.
-        let t = Timer(timeInterval: 1.0 / 15.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.tick() }
-        }
-        RunLoop.main.add(t, forMode: .common)   // fire during menu tracking too
-        timer = t
+    /// Processing mode: the recording is done and we're transcribing. Keeps the panel in
+    /// place, swaps the meter+timer for a centered message with an animated ellipsis.
+    func showProcessing(_ message: String) {
+        processingMessage = message
+        animFrame = 0
+        statusLabel.stringValue = message
+        meter.isHidden = true
+        timeLabel.isHidden = true
+        statusLabel.isHidden = false
+        ensureVisible()
     }
 
     func hide() {
         timer?.invalidate()
         timer = nil
         startDate = nil
+        processingMessage = nil
         if let activity {
             ProcessInfo.processInfo.endActivity(activity)
             self.activity = nil
         }
         panel.orderOut(nil)
+    }
+
+    /// Make sure the panel is on screen with the animation timer and the keep-alive
+    /// activity running. Safe to call when already visible (used by both modes).
+    private func ensureVisible() {
+        positionBottomCenter()
+        panel.orderFrontRegardless()   // show without taking focus
+
+        if activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .idleSystemSleepDisabled],
+                reason: "Recording meter")
+        }
+        if timer == nil {
+            // ~15 fps: the bars scroll gently rather than racing across.
+            let t = Timer(timeInterval: 1.0 / 15.0, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.tick() }
+            }
+            RunLoop.main.add(t, forMode: .common)   // fire during menu tracking too
+            timer = t
+        }
     }
 
     /// Store the newest loudness; the timer turns it into animation frames.
@@ -101,6 +142,14 @@ final class RecordingHUD {
     }
 
     private func tick() {
+        if let message = processingMessage {
+            // Animate a trailing ellipsis (cycles ~2.5x/sec at 15 fps).
+            animFrame += 1
+            let dots = (animFrame / 6) % 4
+            statusLabel.stringValue = message + String(repeating: ".", count: dots)
+            return
+        }
+
         meter.advance(latestLevel)
         meter.display()   // force a synchronous redraw (background app)
 

@@ -57,6 +57,10 @@ final class DictationController {
 
     private(set) var isEnabled = false
     var isDictating: Bool { phase != .idle }
+    /// True from when a recording stops until its transcript is injected, so the HUD can
+    /// stay up showing a "finishing" state (the transcription can take a moment, most of
+    /// all on a cold model load).
+    private(set) var isFinishing = false
 
     /// Return false to veto starting dictation (e.g. a voice memo is recording).
     var canStart: (@MainActor () -> Bool)?
@@ -300,6 +304,7 @@ final class DictationController {
         tempURL = nil
         beganAt = nil
         pressedAt = nil
+        isFinishing = true   // keep the HUD up in a "finishing" state until text lands
         onStateChange?()
 
         // The temp audio is transcribed, injected, then discarded; the text is
@@ -310,16 +315,21 @@ final class DictationController {
                 let transcript = try await engine.transcribe(fileAt: url, onPartial: nil)
                 let cleaned = TextCleaner.process(transcript.text)
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !cleaned.isEmpty else { return }
-                // Optional on-device AI polish (stutters / false starts). Adds latency,
-                // so it's gated by a setting; falls back to the cleaned text.
-                let text = await Polisher.polishIfEnabled(cleaned)
-                await MainActor.run {
-                    self?.injector.inject(text)
-                    self?.onTranscript?(text, duration, targetApp)
+                if !cleaned.isEmpty {
+                    // Optional on-device AI polish (stutters / false starts). Adds
+                    // latency, so it's gated by a setting; falls back to the cleaned text.
+                    let text = await Polisher.polishIfEnabled(cleaned)
+                    await MainActor.run {
+                        self?.injector.inject(text)
+                        self?.onTranscript?(text, duration, targetApp)
+                    }
                 }
             } catch {
                 Log.error("Dictation transcription failed: \(error.localizedDescription)")
+            }
+            await MainActor.run {
+                self?.isFinishing = false
+                self?.onStateChange?()
             }
         }
     }
