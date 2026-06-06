@@ -22,8 +22,6 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>15.0</string>
-    <key>LSUIElement</key>
-    <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>Murmur records your microphone so it can transcribe what you say.</string>
     <key>NSAudioCaptureUsageDescription</key>

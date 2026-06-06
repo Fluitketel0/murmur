@@ -48,4 +48,16 @@ codesign --force \
     "$APP_DIR"
 
 echo "==> Built: $APP_DIR"
-echo "    Launch:  open \"$APP_DIR\""
+
+# Install into /Applications so Spotlight / Raycast index it (they don't look in a
+# project folder), and register it with Launch Services so it shows up promptly.
+# Best-effort: a failure here never fails the build.
+INSTALL_PATH="/Applications/$APP_NAME.app"
+if rm -rf "$INSTALL_PATH" 2>/dev/null && cp -R "$APP_DIR" "$INSTALL_PATH" 2>/dev/null; then
+    LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+    [ -x "$LSREGISTER" ] && "$LSREGISTER" -f "$INSTALL_PATH" 2>/dev/null || true
+    echo "==> Installed: $INSTALL_PATH (findable in Spotlight/Raycast)"
+    echo "    Launch:  open \"$INSTALL_PATH\""
+else
+    echo "==> Could not install to /Applications (skipped); launch: open \"$APP_DIR\""
+fi
