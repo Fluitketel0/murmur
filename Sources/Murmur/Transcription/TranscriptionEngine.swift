@@ -16,6 +16,15 @@ protocol TranscriptionEngine: Sendable {
     ///   stream simply call it once at the end (or not at all).
     func transcribe(fileAt url: URL,
                     onPartial: (@Sendable (String) -> Void)?) async throws -> Transcript
+
+    /// Load the model ahead of first use so the first real transcription isn't stuck on
+    /// a slow cold load. Best-effort and idempotent; default is a no-op for engines that
+    /// don't need it.
+    func prewarm() async
+}
+
+extension TranscriptionEngine {
+    func prewarm() async {}
 }
 
 /// Result of a transcription. Segments carry per-utterance timing (for SRT export

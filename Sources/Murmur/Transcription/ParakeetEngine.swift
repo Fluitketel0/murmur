@@ -41,6 +41,15 @@ actor ParakeetEngine: TranscriptionEngine {
         Log.info("Speech models ready")
     }
 
+    /// Load the ASR + VAD models now (in the background), so the first dictation or
+    /// meeting transcription doesn't pay the cold-load cost on the critical path. This
+    /// matters most right after a reboot or a macOS update, when CoreML recompiles the
+    /// models for the Neural Engine, which can take tens of seconds.
+    func prewarm() async {
+        do { try await prepare() }
+        catch { Log.error("Speech model prewarm failed: \(error.localizedDescription)") }
+    }
+
     func transcribe(fileAt url: URL,
                     onPartial: (@Sendable (String) -> Void)?) async throws -> Transcript {
         try await prepare()

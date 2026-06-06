@@ -61,10 +61,23 @@ final class AppCoordinator {
     var isDictating: Bool { dictation.isDictating }
     var dictationTrigger: String { dictation.triggerDescription }
 
-    func toggleDictation() { dictation.toggle() }
+    func toggleDictation() {
+        dictation.toggle()
+        if dictation.isEnabled { prewarmEngine() }   // load the model before it's needed
+    }
 
     /// Re-arm dictation at launch if it was enabled last session (silent; no prompt).
-    func restoreDictation() { dictation.restoreIfPreviouslyEnabled() }
+    func restoreDictation() {
+        dictation.restoreIfPreviouslyEnabled()
+        if dictation.isEnabled { prewarmEngine() }
+    }
+
+    /// Load the speech model in the background so the first dictation/transcription isn't
+    /// stuck on a slow cold load (worst right after a reboot or macOS update, when CoreML
+    /// recompiles for the Neural Engine). Idempotent and cheap to call repeatedly.
+    func prewarmEngine() {
+        Task { await engine.prewarm() }
+    }
 
     var dictationMode: DictationMode { Settings.dictationMode }
 
@@ -162,6 +175,7 @@ final class AppCoordinator {
 
     func startMeeting() {
         guard !isDictating, !isMeetingRecording else { return }
+        prewarmEngine()   // get the model loading while the meeting records
         requestMicrophone { [weak self] granted in
             guard let self else { return }
             guard granted else { self.presentMicrophoneDenied(); return }
