@@ -39,7 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.applicationIconImage = icon
         }
         AudioDucker.restoreAfterCrashIfNeeded()   // unmute if a crash left us ducked
-        Settings.migrateDefaultsIfNeeded()   // move old Hyper+R meeting default → ⌘E
+        Settings.migrateDefaultsIfNeeded()   // move old meeting defaults (Hyper+R, ⌘E) → ⌥⌘E
         NSApp.mainMenu = MainMenu.make(zoomTarget: self)   // shown while the window is open
         setupMenuBar()
         coordinator.onStateChange = { [weak self] in
@@ -323,8 +323,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() {
-        if coordinator.isMeetingRecording { coordinator.stopMeeting() }
         NSApp.terminate(nil)
+    }
+
+    /// Runs on every quit path (status-menu Quit, the main menu's ⌘Q, log-out, …).
+    /// Stop an in-progress meeting so the journal records a clean finish instead of
+    /// an orphan to crash-recover; its transcription re-runs on the next launch.
+    func applicationWillTerminate(_ notification: Notification) {
+        if coordinator.isMeetingRecording { coordinator.stopMeeting() }
     }
 
     // MARK: Per-recording actions (id carried in representedObject)

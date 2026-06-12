@@ -42,7 +42,7 @@ struct SettingsView: View {
             } header: {
                 Text("Keyboard shortcuts")
             } footer: {
-                Text("Click a field, then press the keys you want (e.g. ⌘E), or hold a single modifier like Fn. Press Esc to cancel, or ↺ to restore the default.")
+                Text("Click a field, then press the keys you want (e.g. ⌥⌘E), or hold a single modifier like Fn. Press Esc to cancel, or ↺ to restore the default.")
             }
 
             Section {

@@ -1,16 +1,19 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Drag-and-drop (or pick) audio/video files to transcribe them. Files are *linked*,
+/// Drag-and-drop (or pick) audio files to transcribe them. Files are *linked*,
 /// not copied (the original stays where it is); the transcript lands in History.
 /// Built mainly for voice memos recorded on an iPhone, phone, or Mac.
+///
+/// Audio only: the pipeline reads files with AVAudioFile, which can't open movie
+/// containers, so accepting video would just produce "Transcription failed" rows.
 struct ImportView: View {
     @Bindable var model: AppModel
     @Environment(\.fontScale) private var scale
     @State private var isTargeted = false
 
-    /// Audio and video we'll accept (Voice Memos export m4a; movies carry an audio track).
-    private static let acceptedTypes: [UTType] = [.audio, .movie, .mpeg4Movie, .quickTimeMovie]
+    /// Audio formats we'll accept (Voice Memos export m4a).
+    private static let acceptedTypes: [UTType] = [.audio]
 
     var body: some View {
         VStack(spacing: 20 * scale) {
@@ -31,7 +34,7 @@ struct ImportView: View {
             Image(systemName: "square.and.arrow.down")
                 .scaledFont(40)
                 .foregroundStyle(Brand.wave)
-            Text("Drag audio or video here")
+            Text("Drag an audio file here")
                 .scaledFont(15, weight: .semibold)
             Button("Choose File…", action: chooseFile)
                 .controlSize(.large)
@@ -74,7 +77,7 @@ struct ImportView: View {
             return true
         }
         let exts: Set<String> = ["m4a", "mp3", "wav", "aiff", "aifc", "caf", "aac",
-                                 "flac", "ogg", "opus", "mp4", "mov", "m4v"]
+                                 "flac", "ogg", "opus"]
         return exts.contains(url.pathExtension.lowercased())
     }
 }

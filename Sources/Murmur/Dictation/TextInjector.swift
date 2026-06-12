@@ -10,13 +10,23 @@ import CoreGraphics
 /// Posting key events to other apps requires Accessibility permission.
 @MainActor
 final class TextInjector {
+    /// Markers from http://nspasteboard.org that clipboard managers (Maccy, Raycast,
+    /// Paste, …) honor: without them, every dictation would be permanently recorded
+    /// in their history even though it's only on the pasteboard for a moment.
+    private static let transientType = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
+    private static let concealedType = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
+
     func inject(_ text: String) {
         guard !text.isEmpty else { return }
         let pasteboard = NSPasteboard.general
         let saved = snapshot(pasteboard)
 
         pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+        let item = NSPasteboardItem()
+        item.setString(text, forType: .string)
+        item.setData(Data(), forType: Self.transientType)
+        item.setData(Data(), forType: Self.concealedType)
+        pasteboard.writeObjects([item])
         postCommandV()
 
         // Restore the user's clipboard after the paste has been delivered.

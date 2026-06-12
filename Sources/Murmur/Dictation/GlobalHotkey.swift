@@ -74,7 +74,10 @@ final class GlobalHotkey {
     }
 
     func stop() {
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)   // fully tear down the tap, not just disable it
+        }
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }

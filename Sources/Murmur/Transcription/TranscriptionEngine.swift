@@ -19,12 +19,14 @@ protocol TranscriptionEngine: Sendable {
 
     /// Load the model ahead of first use so the first real transcription isn't stuck on
     /// a slow cold load. Best-effort and idempotent; default is a no-op for engines that
-    /// don't need it.
-    func prewarm() async
+    /// don't need it. Returns whether the model is actually ready, so callers can retry
+    /// later (e.g. a first-run download failed because the Mac was offline).
+    @discardableResult
+    func prewarm() async -> Bool
 }
 
 extension TranscriptionEngine {
-    func prewarm() async {}
+    func prewarm() async -> Bool { true }
 }
 
 /// Result of a transcription. Segments carry per-utterance timing (for SRT export

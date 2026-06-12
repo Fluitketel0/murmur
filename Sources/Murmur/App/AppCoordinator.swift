@@ -23,7 +23,7 @@ final class AppCoordinator {
     private var meetingAudioApps: Set<String> = []
     private var sourceAppTimer: Timer?
 
-    /// Toggles meeting recording. Default ⌘E; user-configurable.
+    /// Toggles meeting recording. Default ⌥⌘E; user-configurable.
     private lazy var meetingHotkey: GlobalHotkey = makeMeetingHotkey()
 
     private func makeMeetingHotkey() -> GlobalHotkey {
@@ -84,8 +84,9 @@ final class AppCoordinator {
     func prewarmEngine() {
         guard !engineReady else { return }
         Task {
-            await engine.prewarm()
-            engineReady = true
+            // Only mark ready on success, so a failed load (e.g. the first-run model
+            // download with no network) is retried the next time prewarm is called.
+            engineReady = await engine.prewarm()
             onStateChange?()
         }
     }

@@ -46,8 +46,11 @@ struct Shortcut: Codable, Equatable, Sendable {
 
     /// Hold Fn (Globe) - the default push-to-talk trigger.
     static let fnHold = Shortcut(keyCode: nil, modifiers: .maskSecondaryFn)
-    /// ⌘E - the default meeting toggle. A real Command combo (unlike a Hyper chord,
-    /// it survives key remappers like Hyperkey) and unused by macOS globally. E = 14.
+    /// ⌥⌘E - the default meeting toggle. A real modifier combo (unlike a Hyper chord,
+    /// it survives key remappers like Hyperkey) that apps rarely claim - plain ⌘E is
+    /// "Use Selection for Find" in many apps, so the tap would swallow it. E = 14.
+    static let optCmdE = Shortcut(keyCode: 14, modifiers: [.maskCommand, .maskAlternate])
+    /// ⌘E - the previous meeting default; kept for migration.
     static let cmdE = Shortcut(keyCode: 14, modifiers: .maskCommand)
     /// Hyper+R (⌃⌥⌘⇧R) - the previous meeting default; kept for migration. R = 15.
     static let hyperR = Shortcut(keyCode: 15,

@@ -7,6 +7,8 @@ struct RecentlyDeletedView: View {
     @Bindable var model: AppModel
     @Environment(\.fontScale) private var scale
     @State private var confirmingEmpty = false
+    /// The recording whose per-item "delete permanently" is awaiting confirmation.
+    @State private var pendingDelete: Recording?
 
     var body: some View {
         Group {
@@ -44,6 +46,16 @@ struct RecentlyDeletedView: View {
         } message: {
             Text("This removes \(model.deletedRecordings.count) recording(s) and their files. This can't be undone.")
         }
+        .confirmationDialog("Permanently delete this recording?",
+                            isPresented: Binding(get: { pendingDelete != nil },
+                                                 set: { if !$0 { pendingDelete = nil } }),
+                            titleVisibility: .visible,
+                            presenting: pendingDelete) { rec in
+            Button("Delete Permanently", role: .destructive) { model.deletePermanently(rec.id) }
+            Button("Cancel", role: .cancel) {}
+        } message: { rec in
+            Text("“\(rec.displayName)” and its files will be removed. This can't be undone.")
+        }
     }
 
     private func row(_ rec: Recording) -> some View {
@@ -65,7 +77,7 @@ struct RecentlyDeletedView: View {
                 Button("Restore") { model.restore(rec.id) }
                     .buttonStyle(.borderless)
                 Button {
-                    model.deletePermanently(rec.id)
+                    pendingDelete = rec
                 } label: {
                     Image(systemName: "trash")
                 }

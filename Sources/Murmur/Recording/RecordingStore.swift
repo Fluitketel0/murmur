@@ -354,7 +354,13 @@ final class RecordingStore {
             save()
             Log.info("Migrated \(entries.count) recording(s) to the folder layout")
         } else {
-            Log.error("Failed to read journal (unrecognized format)")
+            // Starting with an empty list means the next save() would overwrite the
+            // unreadable journal and lose every recording's metadata for good. Keep a
+            // copy aside so it can still be inspected and recovered by hand.
+            let backup = Paths.appSupport.appendingPathComponent("journal.unreadable.json")
+            try? FileManager.default.removeItem(at: backup)
+            try? FileManager.default.copyItem(at: Paths.journal, to: backup)
+            Log.error("Failed to read journal (unrecognized format); copied to \(backup.lastPathComponent)")
         }
     }
 

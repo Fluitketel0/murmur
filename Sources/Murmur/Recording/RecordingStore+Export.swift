@@ -98,8 +98,13 @@ extension RecordingStore {
             }
             Log.info("Migrated \(rec.folder) into folder layout")
         }
+        // Re-export only what's missing or incomplete. Unconditionally re-exporting
+        // every finished recording would rewrite each transcript.md and regenerate the
+        // index once per recording on every launch - I/O that grows with history size.
         for rec in recordings where rec.transcription == .done {
-            finalizeAndExport(rec.id)
+            if rec.durationSeconds == nil || !fm.fileExists(atPath: rec.transcriptURL.path) {
+                finalizeAndExport(rec.id)
+            }
         }
         regenerateIndex()
     }
@@ -111,7 +116,9 @@ extension RecordingStore {
     /// free; skips anything already in the new format.
     func normalizeFolderNames() {
         let fm = FileManager.default
-        var taken = Set(recordings.map(\.folder))
+        // Include trashed recordings: their folders are still on disk, so a rename
+        // must not collide with them either.
+        var taken = Set((recordings + deletedRecordings).map(\.folder))
         var changed = false
         for rec in recordings {
             let canonical = Self.canonicalFolderName(rec.folder)

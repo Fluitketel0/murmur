@@ -138,7 +138,7 @@ final class AppModel {
     var dictationTriggerDescription: String { coordinator.dictationTrigger }
 
     func resetDictationShortcut() { dictationShortcut = .fnHold }
-    func resetMeetingShortcut() { meetingShortcut = .cmdE }
+    func resetMeetingShortcut() { meetingShortcut = .optCmdE }
 
     // MARK: Storage
 

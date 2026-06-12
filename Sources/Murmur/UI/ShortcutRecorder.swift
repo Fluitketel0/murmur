@@ -71,8 +71,20 @@ final class RecorderView: NSView {
     override func keyDown(with event: NSEvent) {
         guard isRecording else { super.keyDown(with: event); return }
         if event.keyCode == 53 { isRecording = false; return }   // Esc cancels
-        capture(Shortcut(keyCode: Int64(event.keyCode), modifiers: chordModifiers(event.modifierFlags)))
+        let mods = chordModifiers(event.modifierFlags)
+        // A modifier-less ordinary key (a letter, Space, …) would be consumed by the
+        // global tap on every press, hijacking normal typing system-wide. Only F-keys
+        // are safe to bind on their own; otherwise keep listening for a real chord.
+        if mods.isEmpty, !Self.standaloneKeys.contains(Int64(event.keyCode)) { return }
+        capture(Shortcut(keyCode: Int64(event.keyCode), modifiers: mods))
     }
+
+    /// Keys that may be bound without any modifier: F1...F20.
+    private static let standaloneKeys: Set<Int64> = [
+        122, 120, 99, 118, 96, 97, 98, 100,        // F1...F8
+        101, 109, 103, 111,                        // F9...F12
+        105, 107, 113, 106, 64, 79, 80, 90,        // F13...F20
+    ]
 
     override func flagsChanged(with event: NSEvent) {
         guard isRecording else { super.flagsChanged(with: event); return }
