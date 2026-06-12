@@ -32,6 +32,18 @@ if [ -f "$ROOT/Resources/MenuBarIcon.png" ]; then
     cp "$ROOT/Resources/MenuBarIcon.png" "$APP_DIR/Contents/Resources/MenuBarIcon.png"
 fi
 
+# Embed the Sparkle auto-update framework (from the resolved SwiftPM binary artifact)
+# and add an rpath so @rpath/Sparkle.framework resolves inside the bundle.
+SPARKLE_FW="$(find "$ROOT/.build/artifacts" -path "*/macos-arm64_x86_64/Sparkle.framework" -type d 2>/dev/null | head -1)"
+if [ -n "$SPARKLE_FW" ]; then
+    mkdir -p "$APP_DIR/Contents/Frameworks"
+    cp -R "$SPARKLE_FW" "$APP_DIR/Contents/Frameworks/"
+    install_name_tool -add_rpath "@executable_path/../Frameworks" \
+        "$APP_DIR/Contents/MacOS/$APP_NAME" 2>/dev/null || true
+else
+    echo "==> WARNING: Sparkle.framework not found; auto-update won't work. Run 'swift package resolve'."
+fi
+
 # Choose signing identity: stable self-signed if present, else ad-hoc.
 if security find-identity -p codesigning 2>/dev/null | grep -q "$IDENTITY_NAME"; then
     SIGN_ID="$IDENTITY_NAME"
@@ -39,6 +51,21 @@ if security find-identity -p codesigning 2>/dev/null | grep -q "$IDENTITY_NAME";
 else
     SIGN_ID="-"
     echo "==> Signing ad-hoc. Run ./scripts/make-cert.sh for persistent permissions."
+fi
+
+# Sign Sparkle's nested code first (deepest first), then the framework, then the app.
+# (Inside-out signing instead of the deprecated --deep.)
+FW_DST="$APP_DIR/Contents/Frameworks/Sparkle.framework"
+if [ -d "$FW_DST" ]; then
+    for nested in \
+        "Versions/B/Autoupdate" \
+        "Versions/B/Updater.app" \
+        "Versions/B/XPCServices/Downloader.xpc" \
+        "Versions/B/XPCServices/Installer.xpc"; do
+        [ -e "$FW_DST/$nested" ] && \
+            codesign --force --options runtime --sign "$SIGN_ID" "$FW_DST/$nested"
+    done
+    codesign --force --options runtime --sign "$SIGN_ID" "$FW_DST"
 fi
 
 codesign --force \

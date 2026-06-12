@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var windowController = MainWindowController(model: model)
     private var statusItem: NSStatusItem!
     private let hud = RecordingHUD()
+    private let updater = AppUpdater()
     private enum HUDState { case hidden, recording, processing }
     private var hudState: HUDState = .hidden
     /// Whether the status menu is currently open; we only rebuild its recording rows
@@ -170,6 +171,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Recording rows (and a Finder link) get inserted between the header and
         // this anchor.
         menu.addItem(recentAnchor)
+
+        menu.addItem(updater.makeMenuItem())
+        menu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: "Quit Murmur",
                                   action: #selector(quit), keyEquivalent: "q")
