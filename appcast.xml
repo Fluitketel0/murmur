@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>Murmur</title>
+    <description>Updates for Murmur, private on-device speech-to-text for macOS.</description>
+    <language>en</language>
+    <item>
+      <title>Version 0.3.0</title>
+      <description><![CDATA[Automatic updates: Murmur now keeps itself up to date in the background (via Sparkle). A Check for Updates item is in the menu too.]]></description>
+      <pubDate>Fri, 12 Jun 2026 20:43:13 +0000</pubDate>
+      <sparkle:version>3</sparkle:version>
+      <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/Fluitketel0/murmur/releases/download/v0.3.0/Murmur.zip" sparkle:edSignature="g8oYxcmnuyE/wwi+t5/W1PDQazebvY5z+L+T196G4uVdh73q7scVgpPP3PPpqhsczFpRLzFqtpjejGEouj15DA==" length="5243686" type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>
