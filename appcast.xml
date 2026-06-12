@@ -5,13 +5,23 @@
     <description>Updates for Murmur, private on-device speech-to-text for macOS.</description>
     <language>en</language>
     <item>
-      <title>Version 0.3.0</title>
-      <description><![CDATA[Automatic updates: Murmur now keeps itself up to date in the background (via Sparkle). A Check for Updates item is in the menu too.]]></description>
-      <pubDate>Fri, 12 Jun 2026 20:43:13 +0000</pubDate>
-      <sparkle:version>3</sparkle:version>
-      <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+      <title>Version 0.4.0</title>
+      <description><![CDATA[Stability and privacy fixes from a full code audit.
+
+- Meeting hotkey default is now ⌥⌘E (plain ⌘E collided with 'Use Selection for Find'); existing ⌘E defaults migrate automatically
+- Quitting with ⌘Q now cleanly stops an in-progress meeting recording
+- Dictated text no longer ends up in clipboard-manager history (transient pasteboard markers)
+- Failed speech-model loads (e.g. first run while offline) now retry instead of silently sticking
+- An unreadable journal is backed up instead of being overwritten
+- The shortcut recorder no longer lets you bind a bare letter or Space (which would swallow that key everywhere)
+- Deleting a single recording from Recently Deleted now asks for confirmation
+- Video files are no longer offered for import (they always failed to transcribe)
+- Faster launches: transcripts and the index are no longer rewritten on every start]]></description>
+      <pubDate>Fri, 12 Jun 2026 21:17:01 +0000</pubDate>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/Fluitketel0/murmur/releases/download/v0.3.0/Murmur.zip" sparkle:edSignature="g8oYxcmnuyE/wwi+t5/W1PDQazebvY5z+L+T196G4uVdh73q7scVgpPP3PPpqhsczFpRLzFqtpjejGEouj15DA==" length="5243686" type="application/octet-stream" />
+      <enclosure url="https://github.com/Fluitketel0/murmur/releases/download/v0.4.0/Murmur.zip" sparkle:edSignature="Ex5hPuvz89AqFebfES/h7qAy9GR+DEYPbC6325bo50rZ0qXVjf61BL2Jme6Qxqye5UgwWlhZ2/vL8DbyNfTKDQ==" length="5249000" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
