@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="design/icon-options/G3_FINAL.png" width="120" alt="Murmur app icon">
+  <img src="design/icon/icon.png" width="120" alt="Murmur app icon">
 
   # Murmur
 
