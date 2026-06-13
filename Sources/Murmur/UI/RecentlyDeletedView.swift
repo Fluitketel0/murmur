@@ -11,12 +11,28 @@ struct RecentlyDeletedView: View {
     @State private var pendingDelete: Recording?
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // "Empty" lives here in the content, not the window toolbar: a `.toolbar` only
+            // appears on this tab, which changed the title bar height between tabs and
+            // shifted the traffic lights. A fixed in-content spot avoids that.
+            if !model.deletedRecordings.isEmpty {
+                HStack {
+                    Spacer()
+                    Button(role: .destructive) { confirmingEmpty = true } label: {
+                        Label("Empty", systemImage: "trash.slash")
+                    }
+                    .buttonStyle(.borderless)
+                }
+                .padding(.horizontal, 16 * scale)
+                .padding(.vertical, 8 * scale)
+            }
+
             if model.deletedRecordings.isEmpty {
                 ContentUnavailableView(
                     "Nothing here",
                     systemImage: "trash",
                     description: Text("Deleted recordings appear here for 30 days, so you can restore them. Then they're removed for good."))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
                     Section {
@@ -29,14 +45,6 @@ struct RecentlyDeletedView: View {
                     }
                 }
                 .listStyle(.inset)
-            }
-        }
-        .navigationTitle("Recently Deleted")
-        .toolbar {
-            if !model.deletedRecordings.isEmpty {
-                Button(role: .destructive) { confirmingEmpty = true } label: {
-                    Label("Empty", systemImage: "trash.slash")
-                }
             }
         }
         .confirmationDialog("Permanently delete everything in Recently Deleted?",

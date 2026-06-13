@@ -93,7 +93,6 @@ struct SettingsView: View {
         // font-scale form controls, so bump their control size in steps to keep pace.
         .font(.system(size: 13 * scale))
         .controlSize(scale >= 1.45 ? .extraLarge : (scale >= 1.15 ? .large : .regular))
-        .navigationTitle("Settings")
         .task { model.refreshStorage() }
     }
 

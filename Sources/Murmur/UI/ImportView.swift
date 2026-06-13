@@ -26,7 +26,6 @@ struct ImportView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(28 * scale)
-        .navigationTitle("Import a file")
     }
 
     private var dropZone: some View {

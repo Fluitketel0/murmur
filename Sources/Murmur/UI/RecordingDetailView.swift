@@ -11,33 +11,22 @@ struct RecordingDetailView: View {
     @Environment(\.fontScale) private var scale
 
     var body: some View {
-        // GeometryReader pins the content to the pane width; a plain vertical
-        // ScrollView otherwise lets wide text take its ideal width and overflow.
-        GeometryReader { geo in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16 * scale) {
-                    header
-                    metadata
-                    if let s = rec.summary, !s.isEmpty { summaryCard(s) }
-                    Divider()
-                    transcriptBody
-                }
-                .padding(20 * scale)
-                .frame(width: geo.size.width, alignment: .leading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16 * scale) {
+                header
+                metadata
+                if let s = rec.summary, !s.isEmpty { summaryCard(s) }
+                Divider()
+                transcriptBody
             }
-        }
-        .toolbar {
-            ToolbarItemGroup {
-                Button { model.copyTranscript(rec.id) } label: { Label("Copy", systemImage: "doc.on.doc") }
-                    .disabled(rec.transcript?.isEmpty ?? true)
-                Button { model.revealInFinder(rec.id) } label: { Label("Reveal", systemImage: "folder") }
-                if rec.transcription == .failed || rec.transcription == .none {
-                    Button { model.transcribe(rec.id) } label: { Label("Transcribe", systemImage: "arrow.clockwise") }
-                }
-                Button(role: .destructive) { confirmingDelete = true } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
+            .padding(20 * scale)
+            // Cap the reading column at a comfortable width and center it in the pane,
+            // so a maximized window doesn't stretch the transcript edge to edge (long,
+            // sparse lines). The inner maxWidth also bounds the text so it wraps instead
+            // of overflowing. Mirrors how the Settings Form constrains its own width;
+            // scales with the zoom level so the line length stays balanced when zoomed.
+            .frame(maxWidth: 720 * scale, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .confirmationDialog("Move to Recently Deleted?", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { model.delete(rec.id); onDelete() }
@@ -58,7 +47,30 @@ struct RecordingDetailView: View {
                     .scaledFont(12).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
+            actions
         }
+    }
+
+    /// Copy / Reveal / (Transcribe) / Delete. Lives in the view's own header, not the
+    /// window toolbar: a `.toolbar` only appears on this tab, so it changed the title
+    /// bar's height between tabs and shifted the traffic lights. Here it has a fixed home.
+    private var actions: some View {
+        HStack(spacing: 12 * scale) {
+            Button { model.copyTranscript(rec.id) } label: { Image(systemName: "doc.on.doc") }
+                .disabled(rec.transcript?.isEmpty ?? true)
+                .help("Copy transcript")
+            Button { model.revealInFinder(rec.id) } label: { Image(systemName: "folder") }
+                .help("Reveal in Finder")
+            if rec.transcription == .failed || rec.transcription == .none {
+                Button { model.transcribe(rec.id) } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Transcribe")
+            }
+            Button { confirmingDelete = true } label: { Image(systemName: "trash") }
+                .help("Delete")
+        }
+        .buttonStyle(.borderless)
+        .scaledFont(15)
+        .foregroundStyle(.secondary)
     }
 
     private var metadata: some View {

@@ -48,13 +48,17 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        HSplitView {
+        // A fixed-width list beside a flexible detail, with no draggable divider. An
+        // earlier nested HSplitView let the list be dragged wider than the window could
+        // accommodate, which grew the window off the left edge of the screen. With the
+        // list pinned, resizing the window only resizes the detail pane.
+        HStack(spacing: 0) {
             listColumn
-                .frame(minWidth: 300, idealWidth: 340, maxWidth: 460)
+                .frame(width: 340)
+            Divider()
             detailColumn
-                .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("History")
     }
 
     private var listColumn: some View {
@@ -106,6 +110,10 @@ struct HistoryView: View {
             }
         }
         .listStyle(.inset)
+        // Open on the most recent recording rather than an empty detail pane (which
+        // looks especially bare on a large or maximized window). Only when nothing is
+        // already selected, so it never fights a selection the user made.
+        .onAppear { if selectedID == nil { selectedID = filtered.first?.id } }
         // Delete the selected recording with the keyboard: the Delete key (the standard
         // list deletion), plus Command-Delete (Finder's "move to trash"). Soft delete,
         // so it's restorable from Recently Deleted.

@@ -31,7 +31,13 @@ final class MainWindowController: NSObject, NSWindowDelegate {
             let win = NSWindow(contentViewController: hosting)
             win.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             win.tabbingMode = .disallowed   // no window tabs (removes "Show Tab Bar" etc.)
+            // Hide the title-bar text. SwiftUI renders a tab's title large/bold when its
+            // content is a List but inline for the others, and won't reliably unify them,
+            // so showing no title keeps every tab's title bar identical. The sidebar
+            // already indicates the selected section. ("Murmur" is kept as the window's
+            // internal title for the Window menu / Mission Control.)
             win.title = "Murmur"
+            win.titleVisibility = .hidden
             win.titlebarAppearsTransparent = false
             win.isReleasedWhenClosed = false
             win.delegate = self
