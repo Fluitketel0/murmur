@@ -128,6 +128,8 @@ final class AppModel {
     func revealInFinder(_ id: UUID) { coordinator.revealInFinder(id) }
     /// Move to Recently Deleted (restorable), not a permanent delete.
     func delete(_ id: UUID) { coordinator.softDelete(id) }
+    /// Move many to Recently Deleted at once (bulk delete from History).
+    func delete(_ ids: [UUID]) { coordinator.softDelete(ids) }
     func restore(_ id: UUID) { coordinator.restore(id) }
     func deletePermanently(_ id: UUID) { coordinator.deletePermanently(id) }
     func emptyTrash() { coordinator.emptyTrash() }

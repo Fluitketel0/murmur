@@ -17,7 +17,7 @@ struct MainView: View {
         // keep their titles and toolbars (Copy / Reveal / Delete).
         HStack(spacing: 0) {
             sidebar
-                .frame(width: 215)
+                .frame(width: 193)
             Divider()
             // The window title bar shows no text (hidden in MainWindowController): SwiftUI
             // forces a large, bold title whenever a tab's content is a List (History,

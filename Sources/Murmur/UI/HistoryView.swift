@@ -7,6 +7,7 @@ struct HistoryView: View {
     @State private var search = ""
     @State private var filter: SourceFilter = .all
     @State private var selectedID: UUID?
+    @State private var confirmingBulkDelete = false
 
     enum SourceFilter: String, CaseIterable, Identifiable {
         case all, dictation, meeting, imported
@@ -82,6 +83,24 @@ struct HistoryView: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 6)
 
+            // Bulk delete: acts on whatever the search + filter currently show, so you
+            // can (say) pick "Dictation" and clear them all in one step instead of
+            // deleting hundreds of rows one by one.
+            if !filtered.isEmpty {
+                HStack {
+                    Text("\(filtered.count) shown")
+                        .scaledFont(11).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(role: .destructive) { confirmingBulkDelete = true } label: {
+                        Label("Delete Shown", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .scaledFont(11)
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 6)
+            }
+
             Divider()
 
             if filtered.isEmpty {
@@ -97,6 +116,20 @@ struct HistoryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .confirmationDialog("Delete \(filtered.count) recording\(filtered.count == 1 ? "" : "s")?",
+                            isPresented: $confirmingBulkDelete, titleVisibility: .visible) {
+            Button("Move to Recently Deleted", role: .destructive) { bulkDeleteShown() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This moves everything currently shown to Recently Deleted, where it can be restored for 30 days.")
+        }
+    }
+
+    /// Soft-delete every recording matching the current search + filter, in one batch.
+    private func bulkDeleteShown() {
+        let ids = filtered.map(\.id)
+        if let sel = selectedID, ids.contains(sel) { selectedID = nil }
+        model.delete(ids)
     }
 
     private var recordingsList: some View {

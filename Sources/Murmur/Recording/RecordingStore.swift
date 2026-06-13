@@ -298,6 +298,21 @@ final class RecordingStore {
         regenerateIndex()
     }
 
+    /// Move many recordings to Recently Deleted at once. Saves the journal and rebuilds
+    /// the index a single time (not per recording), so deleting hundreds stays fast.
+    func softDelete(_ ids: [UUID]) {
+        let now = Date()
+        let targets = Set(ids)
+        var changed = false
+        for i in entries.indices where targets.contains(entries[i].id) && entries[i].deletedAt == nil {
+            entries[i].deletedAt = now
+            changed = true
+        }
+        guard changed else { return }
+        save()
+        regenerateIndex()
+    }
+
     /// Bring a recording back from Recently Deleted.
     func restore(_ id: UUID) {
         update(id) { $0.deletedAt = nil }

@@ -492,6 +492,12 @@ final class AppCoordinator {
         onStateChange?()
     }
 
+    /// Soft-delete many at once (e.g. "delete everything currently shown" in History).
+    func softDelete(_ ids: [UUID]) {
+        store.softDelete(ids)
+        onStateChange?()
+    }
+
     func restore(_ id: UUID) {
         store.restore(id)
         onStateChange?()
