@@ -13,7 +13,7 @@ The four core capabilities and the polish around them are done and released:
   of dictating. Return / Command-Delete to finish a hands-free dictation.
 - **Meeting capture**: mic + system audio as two tracks, speaker diarization, interleaved
   chronological transcript, source-app labelling.
-- **File import**: drag-and-drop or pick an audio/video file (linked, not copied).
+- **File import**: drag-and-drop or pick an audio file (linked, not copied).
 - **Transcription**: Parakeet TDT v3 on the Neural Engine via FluidAudio, Silero VAD
   segmentation, filler-word removal, optional AI summary + stutter cleanup (Apple
   Foundation Models, macOS 26).

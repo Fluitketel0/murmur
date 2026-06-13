@@ -10,7 +10,7 @@ one shared core:
 2. **Push-to-talk dictation**, a global hotkey records, transcribes, and types the
    text at the cursor in any app.
 3. **Meeting capture**, your mic and the system/app audio as two separate clean tracks.
-4. **File import**, drop in an audio or video file and transcribe it.
+4. **File import**, drop in an audio file and transcribe it.
 
 ## Design principles
 
@@ -95,6 +95,20 @@ Requested just-in-time, only when a feature first needs them. Grants are tied to
 code signature, so we sign with a *stable self-signed identity* (`scripts/make-cert.sh`)
 and they survive rebuilds. The app is **not sandboxed** (a sandbox blocks sending paste
 events to other apps).
+
+## Building from source
+
+There is no Xcode project; the app is built with SwiftPM and two scripts.
+
+```sh
+./scripts/make-cert.sh   # once: a stable self-signed identity so permission grants persist
+./scripts/build.sh       # build the .app bundle (or: ./scripts/build.sh release)
+open dist/Murmur.app
+```
+
+`make-cert.sh` is optional but recommended: without it the build signs ad-hoc, and
+macOS re-prompts for every permission on each rebuild. `scripts/release.sh` cuts a
+signed release (see Distribution below).
 
 ## Distribution and updates
 

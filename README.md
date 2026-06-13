@@ -39,16 +39,16 @@ Murmur uses NVIDIA Parakeet TDT v3 via [FluidAudio](https://github.com/FluidInfe
 - Apple Silicon Mac, macOS 15 or later.
 - The optional AI summary and cleanup need macOS 26 (skipped automatically otherwise).
 
-## Build and run
+## Download
 
-```sh
-./scripts/make-cert.sh   # once: stable signing identity so permission grants persist
-./scripts/build.sh       # build the app bundle (or: ./scripts/build.sh release)
-open dist/Murmur.app
-```
+[**Download the latest release**](https://github.com/Fluitketel0/murmur/releases/latest), unzip it, and drag Murmur into your Applications folder. It updates itself automatically from then on.
+
+Murmur is not notarized (it is a free personal project with no paid Apple Developer account), so the first time you open it macOS warns that it is from an unidentified developer. Right-click the app and choose Open, or go to System Settings > Privacy & Security and click Open Anyway.
 
 The first time you enable dictation or record a meeting, macOS asks for the relevant permission (Accessibility, microphone, or system audio). Grant it and you are set.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) and [PLAN.md](PLAN.md) for the design and roadmap.
+## For developers
+
+Building from source, the design, and the roadmap are documented in [ARCHITECTURE.md](ARCHITECTURE.md) and [PLAN.md](PLAN.md).
 
 A personal project, under active development.
