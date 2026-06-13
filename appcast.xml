@@ -6,17 +6,18 @@
     <language>en</language>
     <item>
       <title>Version 0.4.0</title>
-      <description><![CDATA[Stability and privacy fixes from a full code audit.
-
-- Meeting hotkey default is now ⌥⌘E (plain ⌘E collided with 'Use Selection for Find'); existing ⌘E defaults migrate automatically
-- Quitting with ⌘Q now cleanly stops an in-progress meeting recording
-- Dictated text no longer ends up in clipboard-manager history (transient pasteboard markers)
-- Failed speech-model loads (e.g. first run while offline) now retry instead of silently sticking
-- An unreadable journal is backed up instead of being overwritten
-- The shortcut recorder no longer lets you bind a bare letter or Space (which would swallow that key everywhere)
-- Deleting a single recording from Recently Deleted now asks for confirmation
-- Video files are no longer offered for import (they always failed to transcribe)
-- Faster launches: transcripts and the index are no longer rewritten on every start]]></description>
+      <description><![CDATA[<p>Stability and privacy fixes from a full code audit.</p>
+<ul>
+<li>Meeting hotkey default is now ⌥⌘E (plain ⌘E collided with "Use Selection for Find").</li>
+<li>Quitting with ⌘Q now cleanly stops an in-progress meeting recording.</li>
+<li>Dictated text no longer ends up in clipboard-manager history.</li>
+<li>Failed speech-model loads (for example, the first run while offline) now retry instead of silently sticking.</li>
+<li>An unreadable recordings journal is backed up instead of being overwritten.</li>
+<li>The shortcut recorder no longer lets you bind a bare letter or Space, which would have swallowed that key everywhere.</li>
+<li>Deleting a single recording from Recently Deleted now asks for confirmation.</li>
+<li>Video files are no longer offered for import (they always failed to transcribe).</li>
+<li>Faster launches: transcripts and the index are no longer rewritten on every start.</li>
+</ul>]]></description>
       <pubDate>Fri, 12 Jun 2026 21:17:01 +0000</pubDate>
       <sparkle:version>4</sparkle:version>
       <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>

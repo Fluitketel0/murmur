@@ -18,6 +18,23 @@ MIN_OS="$(/usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" Resources/I
 TAG="v$VERSION"
 NOTES="${1:-Murmur $VERSION}"
 
+# GitHub renders the notes as Markdown, but Sparkle renders the appcast description as
+# HTML, where plain newlines collapse into one run-on line. So turn the same notes into
+# HTML for the appcast: lines starting with "- " become a <ul> list, others become <p>.
+# Write the notes as plain Markdown bullets; both surfaces format nicely, no extra effort.
+NOTES_HTML="$(printf '%s\n' "$NOTES" | awk '
+  BEGIN { inlist = 0 }
+  /^[[:space:]]*-[[:space:]]+/ {
+    if (!inlist) { print "<ul>"; inlist = 1 }
+    sub(/^[[:space:]]*-[[:space:]]+/, "")
+    print "<li>" $0 "</li>"
+    next
+  }
+  { if (inlist) { print "</ul>"; inlist = 0 }
+    if (length($0) > 0) print "<p>" $0 "</p>" }
+  END { if (inlist) print "</ul>" }
+')"
+
 echo "==> Releasing $APP_NAME $VERSION (build $BUILD, tag $TAG)"
 
 # 1. Build a release bundle and zip it (ditto preserves the code signature).
@@ -46,7 +63,7 @@ cat > "$APPCAST" <<XML
     <language>en</language>
     <item>
       <title>Version $VERSION</title>
-      <description><![CDATA[$NOTES]]></description>
+      <description><![CDATA[$NOTES_HTML]]></description>
       <pubDate>$PUBDATE</pubDate>
       <sparkle:version>$BUILD</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
