@@ -41,7 +41,7 @@ Murmur uses NVIDIA Parakeet TDT v3 via [FluidAudio](https://github.com/FluidInfe
 
 ## Download
 
-[**Download the latest release**](https://github.com/Fluitketel0/murmur/releases/latest), unzip it, and drag Murmur into your Applications folder. It updates itself automatically from then on.
+[**Download the latest release**](https://github.com/Fluitketel0/murmur/releases/latest), open `Murmur.dmg`, and drag Murmur onto the Applications folder. It updates itself automatically from then on.
 
 Murmur is not notarized (it is a free personal project with no paid Apple Developer account), so the first time you open it macOS warns that it is from an unidentified developer. Right-click the app and choose Open, or go to System Settings > Privacy & Security and click Open Anyway.
 

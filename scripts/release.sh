@@ -1,8 +1,14 @@
 #!/bin/bash
-# Cut a release: build, zip, EdDSA-sign for Sparkle, regenerate the appcast, commit it,
-# and publish the GitHub release with the zip attached. Run after bumping the version in
-# Resources/Info.plist. Requires the Sparkle signing key in the Keychain (make-keys once
-# via Sparkle's generate_keys) and the gh CLI authenticated as the repo owner.
+# Cut a release: build, zip, EdDSA-sign for Sparkle, build a drag-to-Applications DMG,
+# regenerate the appcast, commit it, and publish the GitHub release with both the zip
+# and the DMG attached. Run after bumping the version in Resources/Info.plist. Requires
+# the Sparkle signing key in the Keychain (make-keys once via Sparkle's generate_keys)
+# and the gh CLI authenticated as the repo owner.
+#
+# Two artifacts on purpose: humans download the DMG (open it, drag Murmur to the
+# Applications alias; the Finder drag strips the quarantine flag, so no App
+# Translocation), while Sparkle keeps updating from the zip (no mounting, simplest and
+# most reliable for the silent updater). The appcast points only at the zip.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -10,6 +16,7 @@ ROOT="$(pwd)"
 APP_NAME="Murmur"
 REPO="Fluitketel0/murmur"
 ZIP="$ROOT/dist/$APP_NAME.zip"
+DMG="$ROOT/dist/$APP_NAME.dmg"
 APPCAST="$ROOT/appcast.xml"
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)"
@@ -41,6 +48,17 @@ echo "==> Releasing $APP_NAME $VERSION (build $BUILD, tag $TAG)"
 ./scripts/build.sh release
 rm -f "$ZIP"
 ditto -c -k --keepParent "$ROOT/dist/$APP_NAME.app" "$ZIP"
+
+# 1b. Build the drag-to-Applications DMG (the human download). A staging folder holds
+# the app beside an /Applications alias, so the mounted disk shows both side by side.
+echo "==> Building $APP_NAME.dmg..."
+DMG_STAGE="$(mktemp -d)"
+cp -R "$ROOT/dist/$APP_NAME.app" "$DMG_STAGE/"
+ln -s /Applications "$DMG_STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_STAGE" \
+    -ov -format UDZO "$DMG" >/dev/null
+rm -rf "$DMG_STAGE"
 
 # 2. EdDSA-sign the zip with the key in the Keychain.
 SIGN_UPDATE="$(find "$ROOT/.build/artifacts" -path "*/bin/sign_update" 2>/dev/null | head -1)"
@@ -80,11 +98,12 @@ git add appcast.xml Resources/Info.plist
 git commit -q -m "release: $APP_NAME $VERSION" || echo "    (nothing to commit)"
 git push
 
-# 5. Publish the GitHub release with the zip attached.
+# 5. Publish the GitHub release with both the DMG (human download) and the zip
+# (Sparkle) attached.
 if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    gh release upload "$TAG" "$ZIP" --repo "$REPO" --clobber
+    gh release upload "$TAG" "$DMG" "$ZIP" --repo "$REPO" --clobber
 else
-    gh release create "$TAG" "$ZIP" --repo "$REPO" --title "$APP_NAME $VERSION" --notes "$NOTES"
+    gh release create "$TAG" "$DMG" "$ZIP" --repo "$REPO" --title "$APP_NAME $VERSION" --notes "$NOTES"
 fi
 
 echo "==> Released $TAG. Appcast: https://raw.githubusercontent.com/$REPO/main/appcast.xml"
